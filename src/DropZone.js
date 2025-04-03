@@ -1,36 +1,14 @@
 import React from "react";
-import { useDrop, useDrag } from "react-dnd";
+import { DataTable } from "primereact/datatable";
+import { Column } from "primereact/column";
 
 const DropZone = ({ selectedEndpoints, setSelectedEndpoints, darkMode }) => {
-    const [, drop] = useDrop({
-        accept: "ENDPOINT",
-        hover: (item, monitor) => {
-            const fromIndex = item.index;
-            const toIndex = getItemIndex(monitor.getClientOffset());
-
-            if (fromIndex === toIndex) return;
-
-            moveItem(fromIndex, toIndex);
-            item.index = toIndex;
-        },
-    });
-
-    const getItemIndex = (clientOffset) => {
-        const clientY = clientOffset?.y || 0;
-        return Math.floor(clientY / 90);
+    const onRowReorder = (event) => {
+        setSelectedEndpoints(event.value);
     };
 
     const handleRemove = (index) => {
         setSelectedEndpoints((prev) => prev.filter((_, i) => i !== index));
-    };
-
-    const moveItem = (fromIndex, toIndex) => {
-        setSelectedEndpoints((prev) => {
-            const updated = [...prev];
-            const [movedItem] = updated.splice(fromIndex, 1);
-            updated.splice(toIndex, 0, movedItem);
-            return updated;
-        });
     };
 
     const handleInputChange = (index, field, value) => {
@@ -42,85 +20,60 @@ const DropZone = ({ selectedEndpoints, setSelectedEndpoints, darkMode }) => {
     };
 
     return (
-        <div ref={drop} className={`right-panel ${darkMode ? "dark-mode" : ""}`}>
+        <div className={`right-panel ${darkMode ? "dark-mode" : ""}`}>
             <h2>Execution Queue</h2>
-            {selectedEndpoints.map((endpoint, index) => {
-                if (!endpoint || !endpoint.id) {
-                    console.warn("Invalid endpoint:", endpoint);
-                    return null;
-                }
-                return (
-                    <DraggableEndpoint
-                        key={endpoint.id}
-                        endpoint={endpoint}
-                        index={index}
-                        moveItem={moveItem}
-                        handleRemove={handleRemove}
-                        handleInputChange={handleInputChange}
-                        darkMode={darkMode}
-                    />
-                );
-            })}
-        </div>
-    );
-};
+            <DataTable value={selectedEndpoints} reorderableRows onRowReorder={onRowReorder} className="p-datatable-sm">
+                <Column rowReorder style={{ width: '3rem' }} />
+                <Column header="Action" body={(rowData, { rowIndex }) => (
+                    <div className="queue-item">
+                        <button className="remove-btn" onClick={() => handleRemove(rowIndex)}>×</button>
+                        <span className="endpoint-name">{rowData.name}</span>
 
-const DraggableEndpoint = ({ endpoint, index, moveItem, handleRemove, handleInputChange, darkMode }) => {
-    const [{ isDragging }, drag] = useDrag({
-        type: "ENDPOINT",
-        item: { index, endpoint },
-        collect: (monitor) => ({
-            isDragging: monitor.isDragging(),
-        }),
-    });
+                        {rowData.name === "Move" && (
+                            <div className="input-group">
+                                <select value={rowData.body?.direction || ""} onChange={(e) => handleInputChange(rowIndex, "direction", e.target.value)}>
+                                    <option value="">Select Direction</option>
+                                    <option value="forward">Forward</option>
+                                    <option value="backward">Backward</option>
+                                    <option value="left">Left</option>
+                                    <option value="right">Right</option>
+                                </select>
+                                <input type="number" placeholder="Distance" value={rowData.body?.distance || ""} onChange={(e) => handleInputChange(rowIndex, "distance", parseFloat(e.target.value) || 0)} />
+                            </div>
+                        )}
 
-    return (
-        <div ref={drag} className={`queue-item ${darkMode ? "dark-mode" : ""} ${isDragging ? "dragging" : ""}`}>
-            <button className="remove-btn" onClick={() => handleRemove(index)}>×</button>
-            <span className="endpoint-name">{endpoint.name}</span>
+                        {rowData.name === "Speak" && (
+                            <div className="input-group">
+                                <input type="text" placeholder="Enter text to speak" value={rowData.body?.text || ""} onChange={(e) => handleInputChange(rowIndex, "text", e.target.value)} />
+                            </div>
+                        )}
 
-            {endpoint.name === "Move" && (
-                <div className="input-group">
-                    <select value={endpoint.body?.direction || ""} onChange={(e) => handleInputChange(index, "direction", e.target.value)}>
-                        <option value="">Select Direction</option>
-                        <option value="forward">Forward</option>
-                        <option value="backward">Backward</option>
-                        <option value="left">Left</option>
-                        <option value="right">Right</option>
-                    </select>
-                    <input type="number" placeholder="Distance" value={endpoint.body?.distance || ""} onChange={(e) => handleInputChange(index, "distance", parseFloat(e.target.value) || 0)} />
-                </div>
-            )}
+                        {rowData.name === "Set Eye Color" && (
+                            <div className="input-group">
+                                <select value={rowData.body?.eye || ""} onChange={(e) => handleInputChange(rowIndex, "eye", e.target.value)}>
+                                    <option value="">Select Eye</option>
+                                    <option value="left">Left</option>
+                                    <option value="right">Right</option>
+                                    <option value="both">Both</option>
+                                </select>
+                                <input type="color" value={rowData.body?.color || ""} onChange={(e) => handleInputChange(rowIndex, "color", e.target.value)} />
+                            </div>
+                        )}
 
-            {endpoint.name === "Speak" && (
-                <div className="input-group">
-                    <input type="text" placeholder="Enter text to speak" value={endpoint.body?.text || ""} onChange={(e) => handleInputChange(index, "text", e.target.value)} />
-                </div>
-            )}
+                        {rowData.name === "Squat" && (
+                            <div className="input-group">
+                                <input type="number" placeholder="Repetitions" value={rowData.body?.repetitions || ""} onChange={(e) => handleInputChange(rowIndex, "repetitions", parseInt(e.target.value) || 0)} />
+                            </div>
+                        )}
 
-            {endpoint.name === "Set Eye Color" && (
-                <div className="input-group">
-                    <select value={endpoint.body?.eye || ""} onChange={(e) => handleInputChange(index, "eye", e.target.value)}>
-                        <option value="">Select Eye</option>
-                        <option value="left">Left</option>
-                        <option value="right">Right</option>
-                        <option value="both">Both</option>
-                    </select>
-                    <input type="color" value={endpoint.body?.color || ""} onChange={(e) => handleInputChange(index, "color", e.target.value)} />
-                </div>
-            )}
-
-            {endpoint.name === "Squat" && (
-                <div className="input-group">
-                    <input type="number" placeholder="Repetitions" value={endpoint.body?.repetitions || ""} onChange={(e) => handleInputChange(index, "repetitions", parseInt(e.target.value) || 0)} />
-                </div>
-            )}
-
-            {endpoint.name === "Upload Music" && (
-                <div className="input-group">
-                    <input type="text" placeholder="Enter URL" value={endpoint.body?.url || ""} onChange={(e) => handleInputChange(index, "url", e.target.value)} />
-                </div>
-            )}
+                        {rowData.name === "Upload Music" && (
+                            <div className="input-group">
+                                <input type="text" placeholder="Enter URL" value={rowData.body?.url || ""} onChange={(e) => handleInputChange(rowIndex, "url", e.target.value)} />
+                            </div>
+                        )}
+                    </div>
+                )} />
+            </DataTable>
         </div>
     );
 };
