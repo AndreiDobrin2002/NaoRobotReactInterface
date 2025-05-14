@@ -14,6 +14,7 @@ const categorizedEndpoints = {
     ],
   Actions: [
     { id: "2", name: "Speak", route: "/speak", method: "POST" },
+    { id: "26", name: "Ask", route: "/ask", method: "POST" },
     { id: "8", name: "Hello", route: "/hello", method: "POST" },
     { id: "9", name: "Scratch Head", route: "/scratch_head", method: "POST" },
     { id: "10", name: "Headbang", route: "/headbang", method: "POST" },

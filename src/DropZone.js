@@ -48,6 +48,17 @@ const DropZone = ({ selectedEndpoints, setSelectedEndpoints, darkMode }) => {
                             </div>
                         )}
 
+                        {rowData.name === "Ask" && (
+                            <div className="input-group">
+                                <input
+                                    type="text"
+                                    placeholder="Enter question to ask"
+                                    value={rowData.body?.question || ""}
+                                    onChange={(e) => handleInputChange(rowIndex, "question", e.target.value)}
+                                />
+                            </div>
+                        )}
+
                         {rowData.name === "Set Eye Color" && (
                             <div className="input-group">
                                 <select value={rowData.body?.eye || ""} onChange={(e) => handleInputChange(rowIndex, "eye", e.target.value)}>
