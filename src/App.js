@@ -69,10 +69,28 @@ function App() {
     setIsExecuting(false);
   };
 
-  const handleStop = () => {
+  // const handleStop = () => {
+  //   stopExecutionRef.current = true;
+  //   setIsExecuting(false);
+  // };
+
+  const handleStop = async () => {
     stopExecutionRef.current = true;
     setIsExecuting(false);
+
+    try {
+      await fetch("http://localhost:5000/stop_all", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      console.log("Mișcările și sunetele au fost oprite.");
+    } catch (error) {
+      console.error("Eroare la apelarea stop_all:", error);
+    }
   };
+
 
   const updateRobotVolume = async (newVolume) => {
     try {
