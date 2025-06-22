@@ -1,8 +1,27 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
+import {Button} from "primereact/button";
 
-const DropZone = ({ selectedEndpoints, setSelectedEndpoints, darkMode }) => {
+const DropZone = ({ selectedEndpoints, setSelectedEndpoints, darkMode, onClearQueue, onSaveQueue, onLoadQueue }) => {
+
+    // Load from localStorage on mount
+    useEffect(() => {
+        const savedQueue = localStorage.getItem("executionQueue");
+        if (savedQueue) {
+            try {
+                setSelectedEndpoints(JSON.parse(savedQueue));
+            } catch (err) {
+                console.error("Error parsing executionQueue from localStorage", err);
+            }
+        }
+    }, [setSelectedEndpoints]);
+
+    // Save to localStorage whenever selectedEndpoints changes
+    useEffect(() => {
+        localStorage.setItem("executionQueue", JSON.stringify(selectedEndpoints));
+    }, [selectedEndpoints]);
+
     const onRowReorder = (event) => {
         setSelectedEndpoints(event.value);
     };
@@ -21,10 +40,37 @@ const DropZone = ({ selectedEndpoints, setSelectedEndpoints, darkMode }) => {
 
     return (
         <div className={`right-panel ${darkMode ? "dark-mode" : ""}`}>
-            <h2>Execution Queue</h2>
-            <DataTable value={selectedEndpoints} reorderableRows onRowReorder={onRowReorder} className="p-datatable-sm">
-                <Column rowReorder style={{ width: '3rem' }} />
-                <Column header="Action" body={(rowData, { rowIndex }) => (
+            <div className="execution-header">
+                <h2>Execution Queue</h2>
+                <div className="queue-buttons">
+                    <Button
+                        icon="pi pi-eraser"
+                        rounded
+                        severity="warning"
+                        className="clear-queue"
+                        onClick={onClearQueue}
+                        disabled={selectedEndpoints.length === 0}
+                    />
+                    <Button
+                        icon="pi pi-save"
+                        rounded
+                        severity="info"
+                        className="save-queue"
+                        onClick={onSaveQueue}
+                        disabled={selectedEndpoints.length === 0}
+                    />
+                    <Button
+                        icon="pi pi-folder-open"
+                        rounded
+                        severity="help"
+                        className="load-queue"
+                        onClick={onLoadQueue}
+                    />
+                </div>
+            </div>
+                <DataTable value={selectedEndpoints} reorderableRows onRowReorder={onRowReorder} className="p-datatable-sm">
+                <Column rowReorder style={{width: '3rem'}}/>
+                <Column header="Action" body={(rowData, {rowIndex}) => (
                     <div className="queue-item">
                         <button className="remove-btn" onClick={() => handleRemove(rowIndex)}>×</button>
                         <span className="endpoint-name">{rowData.name}</span>
@@ -50,12 +96,7 @@ const DropZone = ({ selectedEndpoints, setSelectedEndpoints, darkMode }) => {
 
                         {rowData.name === "Ask" && (
                             <div className="input-group">
-                                <input
-                                    type="text"
-                                    placeholder="Enter question to ask"
-                                    value={rowData.body?.question || ""}
-                                    onChange={(e) => handleInputChange(rowIndex, "question", e.target.value)}
-                                />
+                                <input type="text" placeholder="Enter question to ask" value={rowData.body?.question || ""} onChange={(e) => handleInputChange(rowIndex, "question", e.target.value)} />
                             </div>
                         )}
 

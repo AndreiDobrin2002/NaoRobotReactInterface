@@ -37,7 +37,7 @@ html, body, #root {
   position: absolute;
   right: 10px;
   display: flex;
-  gap: 5px;  /* Spațiere între butoane */
+  gap: 0.5rem;  /* Spațiere între butoane */
 }
 
 .p-button .pi {
@@ -77,6 +77,19 @@ html, body, #root {
   padding: 10px;
   overflow-y: auto; /* Activează scroll-ul vertical */
 }
+
+.execution-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.queue-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
 
 .card, .run-button {
   background: #007bff;

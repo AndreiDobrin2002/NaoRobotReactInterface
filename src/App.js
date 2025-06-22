@@ -12,16 +12,24 @@ import "primeicons/primeicons.css";
 import "./App.css";
 
 function App() {
-  const [selectedEndpoints, setSelectedEndpoints] = useState([]);
+  const [selectedEndpoints, setSelectedEndpoints] = useState(() => {
+    const saved = localStorage.getItem("executionQueue");
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [response, setResponse] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
   const [volume, setVolume] = useState(50);
-  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light"); // Verifică dacă avem deja o temă salvată
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
   const stopExecutionRef = useRef(false);
 
   useEffect(() => {
+    localStorage.setItem("executionQueue", JSON.stringify(selectedEndpoints));
+  }, [selectedEndpoints]);
+
+  useEffect(() => {
     document.body.classList.toggle("dark-mode", theme === "dark");
-    localStorage.setItem("theme", theme); // Salvăm tema curentă
+    localStorage.setItem("theme", theme);
   }, [theme]);
 
   useEffect(() => {
@@ -57,7 +65,8 @@ function App() {
           method: endpoint.method,
           headers: { "Content-Type": "application/json" },
         };
-        if (endpoint.method === "POST") options.body = JSON.stringify(endpoint.body || {});
+        if (endpoint.method === "POST")
+          options.body = JSON.stringify(endpoint.body || {});
 
         const res = await fetch(`http://localhost:5000${endpoint.route}`, options);
         const data = await res.json();
@@ -68,11 +77,6 @@ function App() {
     }
     setIsExecuting(false);
   };
-
-  // const handleStop = () => {
-  //   stopExecutionRef.current = true;
-  //   setIsExecuting(false);
-  // };
 
   const handleStop = async () => {
     stopExecutionRef.current = true;
@@ -90,7 +94,6 @@ function App() {
       console.error("Eroare la apelarea stop_all:", error);
     }
   };
-
 
   const updateRobotVolume = async (newVolume) => {
     try {
@@ -116,6 +119,58 @@ function App() {
     setVolume(e.value);
     updateRobotVolume(e.value);
   };
+
+  const handleClearQueue = () => {
+    setSelectedEndpoints([]);
+    localStorage.removeItem("executionQueue");
+  };
+
+  const handleSaveQueueToFile = () => {
+    const filename = prompt("Introduceți un nume pentru fișierul salvat:", "executionQueue");
+
+    if (!filename) return; // utilizatorul a apăsat Anulează
+
+    const blob = new Blob([JSON.stringify(selectedEndpoints, null, 2)], {
+      type: "application/json",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename.endsWith(".json") ? filename : `${filename}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+
+  const handleLoadQueueFromFile = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json";
+
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const loadedQueue = JSON.parse(event.target.result);
+          if (Array.isArray(loadedQueue)) {
+            setSelectedEndpoints(loadedQueue);
+          } else {
+            alert("Invalid file format");
+          }
+        } catch (error) {
+          alert("Failed to load file");
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    input.click();
+  };
+
 
   return (
       <DndProvider backend={HTML5Backend}>
@@ -146,14 +201,16 @@ function App() {
             />
             <Button
                 icon="pi pi-play-circle"
-                rounded severity="success"
+                rounded
+                severity="success"
                 className="execute"
                 onClick={handleExecute}
                 disabled={selectedEndpoints.length === 0 || isExecuting}
             />
             <Button
                 icon="pi pi-stop-circle"
-                rounded severity="danger"
+                rounded
+                severity="danger"
                 className="danger"
                 aria-label="Cancel"
                 onClick={handleStop}
@@ -162,12 +219,28 @@ function App() {
           </div>
         </div>
         <div className="app-container">
-          <EndpointList setSelectedEndpoints={setSelectedEndpoints} selectedEndpoints={selectedEndpoints} setResponse={setResponse} />
-          <DropZone selectedEndpoints={selectedEndpoints} setSelectedEndpoints={setSelectedEndpoints} />
+          <EndpointList
+              setSelectedEndpoints={setSelectedEndpoints}
+              selectedEndpoints={selectedEndpoints}
+              setResponse={setResponse}
+          />
+          <DropZone
+              selectedEndpoints={selectedEndpoints}
+              setSelectedEndpoints={setSelectedEndpoints}
+              darkMode={theme === "dark"}
+              onClearQueue={handleClearQueue}
+              onSaveQueue={handleSaveQueueToFile}
+              onLoadQueue={handleLoadQueueFromFile}
+          />
+
           <div className="robot-camera-container">
             <div className="robot-camera-stream">
               <h2>Robot Camera</h2>
-              <img src="http://localhost:5000/stream_camera" alt="Robot Camera Stream" className="robot-camera" />
+              <img
+                  src="http://localhost:5000/stream_camera"
+                  alt="Robot Camera Stream"
+                  className="robot-camera"
+              />
             </div>
             <div className="robot-response">
               <h2>Execution Response</h2>
